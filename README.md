@@ -1,8 +1,10 @@
 # 🧠 Ideas Archive
 
-**My creative vault** – where I preserve every wild idea that's ever struck me since high school.
+**My creative vault** – where I preserve every wild idea that's ever struck me since high school to present.
 
-<img width="676" height="318" alt="image" src="https://github.com/user-attachments/assets/a0a4bdc9-3493-4a98-bae1-9c206946056c" />
+<p align="center">
+  <img width="676" src="https://github.com/user-attachments/assets/a0a4bdc9-3493-4a98-bae1-9c206946056c" alt="Ideas Archive Banner">
+</p>
 
 
 ## My Story
