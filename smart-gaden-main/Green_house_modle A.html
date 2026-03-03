@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10-Foot Vertical Farm 3D Blueprint</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        /* Footer for initials */
+        .footer-initials {
+            position: fixed;
+            right: 24px;
+            bottom: 16px;
+            color: #2ecc71;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+        body { margin: 0; overflow: hidden; background-color: #2c3e50; font-family: 'Inter', sans-serif; }
+        canvas { display: block; }
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            transition: left 0.3s cubic-bezier(.4,0,.2,1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* When panel is open, shift container to the right */
+        body.panel-open #container {
+            left: 470px; /* matches info-panel width + margin */
+            width: calc(100vw - 470px);
+        }
+        
+        /* --- Info Panel Styling --- */
+        .info-panel {
+            position: absolute;
+            top: 60px; 
+            left: 10px; 
+            background: rgba(0, 0, 0, 0.9);
+            color: #ecf0f1;
+            padding: 18px;
+            border-radius: 12px;
+            max-width: 450px; 
+            width: 450px; 
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            border: 1px solid #2ecc71;
+            font-size: 0.85rem; 
+            /* --- SCROLLING FIX --- */
+            max-height: 85vh; 
+            overflow-y: auto; 
+            /* ------------------------ */
+            transition: left 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0.3s; 
+            z-index: 10;
+        }
+        /* HIDE State: Panel slides slightly off-screen to the left and is invisible */
+        .info-panel.collapsed {
+            left: -480px; 
+            opacity: 0; 
+            visibility: hidden;
+            pointer-events: none; 
+        }
+        .info-panel h2 { 
+            font-size: 1.4rem; 
+            margin-top: 0; 
+            border-bottom: 3px solid #2ecc71; 
+            padding-bottom: 8px; 
+            margin-bottom: 12px;
+            color: #2ecc71;
+        }
+        .info-panel strong { color: #f1c40f; }
+        .info-panel ul { list-style-type: none; padding-left: 0; margin-top: 5px; }
+        .info-panel li { margin-bottom: 6px; line-height: 1.3; }
+        .section-title { font-weight: bold; color: #3498db; margin-top: 15px; margin-bottom: 4px; border-top: 1px dashed #34495e; padding-top: 8px;}
+        .instruction { color: #e67e22; font-weight: bold; margin-top: 15px; display: block; }
+        .calculation { font-style: italic; color: #95a5a6; font-size: 0.8rem; margin-top: 4px;}
+        /* --- Collapse Button Styling --- */
+        .collapse-button {
+            position: absolute;
+            top: 10px;
+            left: 10px; 
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px; 
+            color: #2ecc71;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            z-index: 11;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        /* Collapsed Icon State (Panel is Hidden: Info Icon) */
+        .collapse-button.collapsed-icon {
+            left: 10px; 
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; 
+            font-size: 20px; 
+            transform: none; 
+        }
+        /* Open Panel State: Show collapse icon (<< or >>) */
+        .collapse-button:not(.collapsed-icon) {
+            font-size: 24px;
+            transform: rotate(0deg); 
+        }
+        /* --- Static Title Styling --- */
+        .static-title {
+            position: absolute;
+            top: 10px;
+            left: 60px; 
+            color: #ecf0f1;
+            font-size: 1.5rem;
+            padding: 8px;
+            z-index: 5;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <!-- Title and Button remain at the very top-left -->
+    <div class="static-title">
+        10-Foot Vertical Farm 3D Blueprint
+    </div>
+    
+    <!-- ...existing code... -->
+    <div id="collapse-button" class="collapse-button collapsed-icon" onclick="togglePanel()">
+        &#8505; <!-- Info Circle Icon (Collapsed State) -->
+    </div>
+    <!-- ...existing code... -->
+    <div id="info-panel" class="info-panel collapsed">
+        <h2>Precision Blueprint: All Measurements in Centimeters</h2>
+        <div class="section-title">I. Container & Spacing</div>
+        <ul>
+            <li><strong>Container Interior (H/L/W):</strong> 289.6 cm H x 304.8 cm L x 243.8 cm W.</li>
+            <li><strong>Rack Depth (RACK_D):</strong> <strong>83.8</strong> cm. (Physical maximum for this layout).</li>
+            <li><strong>Central Aisle Width:</strong> 76.2 cm.</li>
+            <li><strong>Single Tier Thickness:</strong> <strong>3.0</strong> cm.</li>
+            <li><strong>Top Clearance (Plant/Light Gap):</strong> <strong>30.5</strong> cm below the roof.</li>
+        </ul>
+        <div class="section-title">II. LEFT SIDE Racks (4 Tiers - Equipment Clearance)</div>
+        <p class="calculation">
+            Lowest rack clears 77.7 cm high HVAC unit by 4.6 cm margin. Vertical pitch fixed at 57.9 cm.
+        </p>
+        <ul>
+            <li><strong>Tier L1 (Lowest Rack Center Y):</strong> <strong>83.8</strong> cm from floor.</li>
+            <li><strong>Tier L2 (Center Y):</strong> 83.8 cm + 57.9 cm = <strong>141.7</strong> cm.</li>
+            <li><strong>Tier L3 (Center Y):</strong> 141.7 cm + 57.9 cm = <strong>199.6</strong> cm.</li>
+            <li><strong>Tier L4 (Top Rack Center Y):</strong> 199.6 cm + 57.9 cm = <strong>257.6</strong> cm.</li>
+        </ul>
+        <div class="section-title">III. RIGHT SIDE Racks (5 Tiers - High Density)</div>
+        <p class="calculation">
+            Even spacing from floor (3.0 cm) to ceiling-aligned top rack (257.6 cm). Spacing is <strong>63.65</strong> cm center-to-center.
+        </p>
+        <ul>
+            <li><strong>Tier R1 (Lowest Rack Center Y):</strong> <strong>3.0</strong> cm from floor.</li>
+            <li><strong>Tier R2 (Center Y):</strong> 3.0 cm + 63.65 cm = <strong>66.6</strong> cm.</li>
+            <li><strong>Tier R3 (Center Y):</strong> 66.6 cm + 63.65 cm = <strong>130.3</strong> cm.</li>
+            <li><strong>Tier R4 (Center Y):</strong> 130.3 cm + 63.65 cm = <strong>194.0</strong> cm.</li>
+            <li><strong>Tier R5 (Top Rack Center Y):</strong> 194.0 cm + 63.65 cm = <strong>257.6</strong> cm.</li>
+        </ul>
+        <div class="section-title">IV. Equipment Consolidation (Front-Left)</div>
+        <p>All measurements are Length (L), Depth (D - into container), Height (H).</p>
+        <ul>
+            <li><strong>HVAC/Control Unit (Red):</strong> 45.7 cm L x 45.7 cm D x 76.2 cm H. (Positioned in the front-left corner)</li>
+            <li><strong>CO2 Tank (Grey):</strong> ~ 30.5 cm D x 61.0 cm H. (Cylinder, next to HVAC)</li>
+            <li><strong>Primary Reservoir (Blue):</strong> 121.9 cm L x 83.8 cm D x 45.7 cm H. (Fits perfectly under the L1 rack and behind the CO2 tank)</li>
+        </ul>
+        <span class="instruction">Use your mouse (click and drag) to rotate the container for a full 360° view!</span>
+    </div>
+    <!-- Footer initials -->
+    <div class="footer-initials">By: RYAN K</div>
+
+    <script>
+        // Global variables for Three.js scene
+        let scene, camera, renderer, controls;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // Container dimensions (Scaled Units based on a 10ft High Cube: ~3.05m L, 2.44m W, 2.9m H)
+        const C_L = 10; // Length (X-axis: -5 to 5)
+        const C_W = 8;  // Width (Z-axis: -4 to 4)
+        const C_H = 9.5; // Height (Y-axis: 0 to 9.5)
+
+        // Racking dimensions
+        const AISLE_W = 2.5; // Central Aisle Width
+        const RACK_D = (C_W - AISLE_W) / 2; // Rack Depth (3.75 units)
+
+        // Custom Colors 
+        const BLUE_TIER_COLOR = 0x00ffff; // Bright Cyan/Blue for the bottom half
+        const YELLOW_TIER_COLOR = 0xffff00; // Bright Yellow for the top half
+
+
+        window.onload = function () {
+            init();
+            animate();
+            // Panel starts collapsed on the left side
+            document.getElementById('info-panel').classList.add('collapsed');
+            document.getElementById('collapse-button').innerHTML = '&#8505;';
+        };
+
+        /**
+         * Toggles the visibility of the info panel and updates the button icon/style.
+         */
+        function togglePanel() {
+            const panel = document.getElementById('info-panel');
+            const button = document.getElementById('collapse-button');
+            const isCollapsed = panel.classList.toggle('collapsed');
+            if (isCollapsed) {
+                // Panel is now hidden, show 'i' icon (info circle)
+                button.innerHTML = '&#8505;'; 
+                button.classList.add('collapsed-icon');
+                document.body.classList.remove('panel-open');
+            } else {
+                // Panel is now visible, show '>>' icon to minimize (pointing away from open panel)
+                button.innerHTML = '&raquo;'; 
+                button.classList.remove('collapsed-icon');
+                document.body.classList.add('panel-open');
+            }
+        }
+        // On load, ensure correct initial position
+        window.onload = function () {
+            init();
+            animate();
+            document.getElementById('info-panel').classList.add('collapsed');
+            document.getElementById('collapse-button').innerHTML = '&#8505;';
+            document.body.classList.remove('panel-open');
+        };
+
+
+        function init() {
+            // 1. Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2c3e50);
+
+            // 2. Camera Setup
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.set(C_L * 1.5, C_H * 0.8, C_W * 1.5);
+
+            // 3. Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // 4. Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 5); 
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+            directionalLight.position.set(20, 30, 10);
+            scene.add(directionalLight);
+
+            // 5. Controls 
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; 
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false; 
+            controls.enablePan = false; 
+            controls.minDistance = 5;
+            controls.maxDistance = 50;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1; 
+            
+            // Center the camera target on the vertical midpoint of the container
+            const verticalCenter = C_H / 2; // 9.5 / 2 = 4.75
+            controls.target.set(0, verticalCenter, 0); 
+            controls.update(); 
+            
+            // 6. Build the Container and Interior Layout
+            buildContainer();
+            buildInterior();
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+        
+        /**
+         * Creates a realistic solar panel array on the roof.
+         */
+        function createSolarRoof() {
+            const group = new THREE.Group();
+            const roofHeight = 0.1;
+            const roofY = C_H - roofHeight / 2; 
+
+            // 1. Base Roof (Dark grey substrate/flashing)
+            const baseGeom = new THREE.BoxGeometry(C_L, roofHeight, C_W);
+            const baseMat = new THREE.MeshLambertMaterial({ color: 0x1c1c1c });
+            const baseMesh = new THREE.Mesh(baseGeom, baseMat);
+            baseMesh.position.y = roofY;
+            group.add(baseMesh);
+
+            // 2. Simulate Solar Panels (Grid of reflective black rectangles)
+            const panelMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x000000, 
+                specular: 0x333333, // Reflective highlight
+                shininess: 10 
+            });
+            
+            const panelThickness = 0.05;
+            const panelWidth = C_W * 0.95; 
+            const panelLength = 2; // 5 panels across the 10ft length
+            const panelY = roofY + panelThickness / 2 + (roofHeight / 2); // Positioned slightly above the base roof
+            
+            // Create 5 rows of panels along the X axis
+            for (let i = 0; i < 5; i++) {
+                const xPos = -C_L / 2 + (panelLength / 2) + (i * panelLength);
+                
+                const panelGeom = new THREE.BoxGeometry(panelLength * 0.9, panelThickness, panelWidth * 0.9);
+                const panelMesh = new THREE.Mesh(panelGeom, panelMaterial);
+                panelMesh.position.set(xPos, panelY, 0);
+                group.add(panelMesh);
+            }
+            
+            group.name = "Solar Panel Roof";
+            return group;
+        }
+
+
+        function buildContainer() {
+            // Define a single material for glazed walls: clear, light blue, and transparent.
+            const glassMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x87cefa, // Light Sky Blue
+                opacity: 0.25, // Adjusted for better visibility of interior
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x4f4f4f });
+
+            const wallThickness = 0.1;
+            
+            // 1. Floor (Solid)
+            const floorGeom = new THREE.BoxGeometry(C_L, wallThickness, C_W);
+            const floorMesh = new THREE.Mesh(floorGeom, floorMaterial);
+            floorMesh.position.y = wallThickness / 2; // Sits right on Y=0
+            scene.add(floorMesh);
+
+            // 2. Left Wall (Glazed) - Z = -C_W / 2
+            const leftWallGeom = new THREE.BoxGeometry(C_L, C_H, wallThickness);
+            const leftWallMesh = new THREE.Mesh(leftWallGeom, glassMaterial);
+            leftWallMesh.position.set(0, C_H / 2, -C_W / 2 + wallThickness / 2);
+            scene.add(leftWallMesh);
+
+            // 3. Right Wall (Glazed) - Z = C_W / 2
+            const rightWallGeom = new THREE.BoxGeometry(C_L, C_H, wallThickness);
+            const rightWallMesh = new THREE.Mesh(rightWallGeom, glassMaterial);
+            rightWallMesh.position.set(0, C_H / 2, C_W / 2 - wallThickness / 2);
+            scene.add(rightWallMesh);
+
+            // 4. Back Wall (Glazed) - X = C_L / 2 
+            const backWallGeom = new THREE.BoxGeometry(wallThickness, C_H, C_W);
+            const backWallMesh = new THREE.Mesh(backWallGeom, glassMaterial);
+            backWallMesh.position.set(C_L / 2 - wallThickness / 2, C_H / 2, 0);
+            scene.add(backWallMesh);
+
+            // --- 5. Front Entrance ---
+            // The front entrance (X = -C_L / 2) is now completely open. 
+
+            // 6. Solar Panel Roof
+            const solarRoof = createSolarRoof();
+            scene.add(solarRoof);
+        }
+
+        /**
+         * Creates a single horizontal growing tier (tray/channel) composed of a 
+         * Yellow Top segment and a Blue Bottom segment.
+         */
+        function createGrowTier(x, y, z, length, depth) {
+            const group = new THREE.Group();
+            const totalHeight = 0.1; // Total thickness of the shelf
+            const segmentHeight = totalHeight / 2; // 0.05
+            const segmentOffset = segmentHeight / 2; // 0.025
+
+            // 1. Bottom (Blue) Segment
+            const bottomGeom = new THREE.BoxGeometry(length, segmentHeight, depth);
+            const bottomMat = new THREE.MeshLambertMaterial({ color: BLUE_TIER_COLOR });
+            const bottomMesh = new THREE.Mesh(bottomGeom, bottomMat);
+            // Position the bottom segment center below the overall tier center (y=0)
+            bottomMesh.position.y = -segmentOffset; 
+            group.add(bottomMesh);
+
+            // 2. Top (Yellow) Segment
+            const topGeom = new THREE.BoxGeometry(length, segmentHeight, depth);
+            const topMat = new THREE.MeshLambertMaterial({ color: YELLOW_TIER_COLOR });
+            const topMesh = new THREE.Mesh(topGeom, topMat);
+            // Position the top segment center above the overall tier center (y=0)
+            topMesh.position.y = segmentOffset; 
+            group.add(topMesh);
+            
+            // Set the overall group position
+            group.position.set(x, y, z);
+            return group;
+        }
+
+        function createLightBar(x, y, z, length, depth) {
+            // Creates a thin bar to represent the LED grow light under each tier
+            const lightGeometry = new THREE.BoxGeometry(length, 0.05, depth);
+            // Set light material to be transparent/invisible so it doesn't affect the shelf colors
+            const lightMaterial = new THREE.MeshLambertMaterial({ opacity: 0, transparent: true }); 
+            const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
+            lightMesh.position.set(x, y, z);
+            return lightMesh;
+        }
+        
+        function createVerticalTower(x, z) {
+            // TOWER HEIGHT CALCULATION (in feet):
+            const towerHeight = 7.8; 
+            const stemRadius = 0.5; 
+            const towerY = 0.8 + (towerHeight / 2); 
+
+            // Tower Stem (White)
+            const stemGeom = new THREE.CylinderGeometry(stemRadius, stemRadius, towerHeight, 16);
+            const stemMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const stemMesh = new THREE.Mesh(stemGeom, stemMat);
+            stemMesh.position.set(x, towerY, z);
+            
+            // Cylindrical Base (Wider, low profile tank)
+            const baseRadius = 1.25; 
+            const baseHeight = 0.75; 
+            const baseY = (baseHeight / 2) + 0.05;
+            
+            const baseGeom = new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight, 32);
+            const baseMat = new THREE.MeshLambertMaterial({ color: 0xafbecd, opacity: 0.9, transparent: true }); // Light blue/gray for tank
+            const baseMesh = new THREE.Mesh(baseGeom, baseMat);
+            baseMesh.position.set(x, baseY, z); 
+            
+            const towerGroup = new THREE.Group();
+            towerGroup.add(stemMesh);
+            towerGroup.add(baseMesh);
+            towerGroup.name = "Cabbage Tower (Aligned)";
+
+            return towerGroup;
+        }
+
+
+        function buildInterior() {
+            // Tier constants
+            const RACK_THICKNESS = 0.1; // Tier thickness
+            const RACK_HALF_THICKNESS = RACK_THICKNESS / 2; // 0.05
+
+            // Equipment Length (Reservoir ends at X=1.5, start racks after that)
+            const RESERVOIR_END_X = 1.5; 
+            const LEFT_RACK_FRONT_LENGTH = RESERVOIR_END_X - (-C_L / 2); // 1.5 - (-5) = 6.5
+            const LEFT_RACK_FRONT_CENTER_X = -C_L / 2 + (LEFT_RACK_FRONT_LENGTH / 2); // -5 + 3.25 = -1.75
+            
+            // Z positions of the rack centers
+            const leftZ = -C_W / 2 + RACK_D / 2; 
+            const rightZ = C_W / 2 - RACK_D / 2; 
+
+
+            // --- 5. Key Equipment (Front-Left Consolidation) ---
+            
+            // --- C. CO2 Tank Placeholder (Small Cylinder)
+            const co2Height = 2;
+            const co2Radius = 0.5;
+
+            // --- B. HVAC/Control Unit (Red Cube) - Front-most, Left-most
+            const hvacHeight = 2.5;
+            const hvacLength = 1.5;
+            const hvacDepth = 1.5;
+            const hvacX = -C_L / 2 + hvacLength / 2; // -5 + 0.75 = -4.25
+            const hvacY = (hvacHeight / 2) + 0.05; // Center Y
+            const hvacZ = -C_W / 2 + hvacDepth / 2; // -4 + 0.75 = -3.25
+            
+            const hvacGeom = new THREE.BoxGeometry(hvacLength, hvacHeight, hvacDepth);
+            const hvacMat = new THREE.MeshLambertMaterial({ color: 0xe74c3c });
+            const hvacMesh = new THREE.Mesh(hvacGeom, hvacMat);
+            hvacMesh.position.set(hvacX, hvacY, hvacZ);
+            hvacMesh.name = "HVAC/Control Unit";
+            scene.add(hvacMesh);
+            
+            // --- C. CO2 Tank Placeholder (Small Cylinder) - Next to HVAC, along the front wall
+            const co2X = hvacX + (hvacLength / 2) + co2Radius; // -3.0
+            const co2Y = (co2Height / 2) + 0.05;
+            const co2Z = hvacZ; // Aligned depth-wise with HVAC
+            
+            const co2Geom = new THREE.CylinderGeometry(co2Radius, co2Radius, co2Height, 32);
+            const co2Mat = new THREE.MeshLambertMaterial({ color: 0x7f8c8d });
+            const co2Mesh = new THREE.Mesh(co2Geom, co2Mat);
+            co2Mesh.position.set(co2X, co2Y, co2Z);
+            co2Mesh.name = "CO2 Tank";
+            scene.add(co2Mesh);
+
+            // --- A. Nutrient Reservoir (Blue Rectangle) - Tucked under the rack, starts after CO2.
+            const reservoirHeight = 1.5;
+            const reservoirLength = 4.0;
+            const reservoirDepth = RACK_D; // 3.75 
+            
+            const reservoirX = co2X + co2Radius + (reservoirLength / 2); // -0.5
+            const reservoirY = (reservoirHeight / 2) + 0.05;
+            const reservoirZ = -C_W / 2 + (reservoirDepth / 2); 
+
+            const reservoirGeom = new THREE.BoxGeometry(reservoirLength, reservoirHeight, reservoirDepth);
+            const reservoirMat = new THREE.MeshLambertMaterial({ color: 0x3498db, opacity: 0.8, transparent: true });
+            const reservoirMesh = new THREE.Mesh(reservoirGeom, reservoirMat);
+            reservoirMesh.position.set(reservoirX, reservoirY, reservoirZ);
+            reservoirMesh.name = "Nutrient Reservoir (Rectangular)";
+            scene.add(reservoirMesh);
+            
+            
+            // --- LEFT SIDE (4 Tiers, Fixed Spacing above the front equipment area) ---
+            const LEFT_RACK_COUNT = 4;
+            const LEFT_TIER_H = 1.9; // Vertical pitch for the 4 tiers
+
+            // 1. Calculate the top Y coordinate of the tallest equipment (HVAC)
+            const HVAC_TOP_Y = hvacY + (hvacHeight / 2); // 1.3 + 1.25 = 2.55
+
+            // 2. Set the starting height for the lowest rack center, ensuring clearance above the HVAC
+            const CLEARANCE_ABOVE_HVAC = 0.15; // Visual clearance
+            // New Rack Center Y = HVAC Top Y + Clearance + Half Rack Thickness (2.55 + 0.15 + 0.05 = 2.75)
+            const LEFT_RACK_START_Y = HVAC_TOP_Y + CLEARANCE_ABOVE_HVAC + RACK_HALF_THICKNESS; 
+
+            for (let i = 0; i < LEFT_RACK_COUNT; i++) {
+                // Calculate position based on start Y and spacing
+                const currentY = LEFT_RACK_START_Y + (i * LEFT_TIER_H);
+                
+                // Rack 1: Left Wall (Shortened front section)
+                const tierLeft = createGrowTier(LEFT_RACK_FRONT_CENTER_X, currentY, leftZ, LEFT_RACK_FRONT_LENGTH * 0.95, RACK_D * 0.95); 
+                const lightLeft = createLightBar(LEFT_RACK_FRONT_CENTER_X, currentY + RACK_HALF_THICKNESS, leftZ, LEFT_RACK_FRONT_LENGTH * 0.95, RACK_D * 0.95);
+                scene.add(tierLeft);
+                scene.add(lightLeft); 
+            }
+            
+            
+            // --- RIGHT SIDE (5 Tiers, New Optimized Spacing from floor to ceiling) ---
+            const RIGHT_RACK_COUNT = 5;
+            
+            // 1. Y-Center for the lowest tier (Flush with the floor mesh center Y=0.05 + 0.05 for rack half thickness)
+            const RIGHT_FLOOR_Y_CENTER = 0.1; 
+            
+            // 2. Y-Center for the topmost tier (C_H - (RACK_HALF_THICKNESS + 1.0 unit plant clearance))
+            const ROOF_CLEARANCE = 1.0;
+            const RIGHT_TOP_Y_CENTER = C_H - RACK_HALF_THICKNESS - ROOF_CLEARANCE; // 9.5 - 0.05 - 1.0 = 8.45
+            
+            // 3. Calculate new uniform spacing (S)
+            const TOTAL_SPACE_BETWEEN_CENTERS = RIGHT_TOP_Y_CENTER - RIGHT_FLOOR_Y_CENTER; // 8.35
+            const NUM_GAPS = RIGHT_RACK_COUNT - 1; // 4
+            const RIGHT_NEW_SPACING = TOTAL_SPACE_BETWEEN_CENTERS / NUM_GAPS; // 2.0875 
+
+            // Use the calculated start Y and spacing
+            const RIGHT_RACK_START_Y = RIGHT_FLOOR_Y_CENTER; 
+
+            for (let i = 0; i < RIGHT_RACK_COUNT; i++) {
+                // Calculate position based on floor start and new uniform spacing
+                const currentY = RIGHT_RACK_START_Y + (i * RIGHT_NEW_SPACING);
+                
+                // Rack 2: Right Wall (FULL LENGTH)
+                const tierRight = createGrowTier(0, currentY, rightZ, C_L * 0.95, RACK_D * 0.95);
+                const lightRight = createLightBar(0, currentY + RACK_HALF_THICKNESS, rightZ, C_L * 0.95, RACK_D * 0.95);
+                scene.add(tierRight);
+                scene.add(lightRight);
+            }
+
+
+            // --- 3. Vertical Towers (Far End, Left Wall - X > 1.5) ---
+            const TOWER_Z = leftZ; 
+            const towerPositionsX = [3.25]; // Center position for the single tower
+
+            towerPositionsX.forEach(x => {
+                const tower = createVerticalTower(x, TOWER_Z);
+                scene.add(tower);
+            });
+
+
+            // --- 4. Central Aisle (Walk-Through) ---
+            const aisleFloorGeom = new THREE.BoxGeometry(C_L * 0.95, 0.01, AISLE_W * 0.9);
+            const aisleFloorMat = new THREE.MeshBasicMaterial({ color: 0x34495e, opacity: 0.8, transparent: true });
+            const aisleFloorMesh = new THREE.Mesh(aisleFloorGeom, aisleFloorMat);
+            aisleFloorMesh.position.y = 0.05; 
+            aisleFloorMesh.name = "Central Aisle";
+            scene.add(aisleFloorMesh);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); 
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
