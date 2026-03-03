@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduPath AI - Live Preview</title>
+    <meta name="description" content="Personalized Learning Roadmaps">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Babel for in-browser JSX transpilation (For Preview Only - Not for Production) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS from src/index.css and component styles */
+        :root {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            color-scheme: dark;
+            color: rgba(255, 255, 255, 0.87);
+            background-color: #121212;
+            --primary: #4A90E2;
+            --success: #7ED321;
+            --bg-card: #2c2c2c;
+            --border: #444;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* RoadmapView.css */
+        .roadmap-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .roadmap-node {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 40px;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .roadmap-node:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+
+        .roadmap-node.completed {
+            border-color: var(--success);
+        }
+
+        .roadmap-node::after {
+            content: '';
+            position: absolute;
+            bottom: -42px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 40px;
+            background-color: var(--border);
+        }
+
+        .roadmap-node:last-child::after {
+            display: none;
+        }
+
+        .node-status {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background-color: var(--success);
+            color: #000;
+        }
+
+        .status-in-progress {
+            background-color: var(--primary);
+            color: #000;
+        }
+
+        .status-locked {
+            background-color: #555;
+            color: #aaa;
+        }
+
+        /* App Layout */
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .subtitle {
+            margin: 5px 0 0;
+            color: #888;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: #aaa;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Parent Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .dashboard-card {
+            background-color: var(--bg-card);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .big-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            margin: 10px 0;
+        }
+
+        .progress-track {
+            width: 100%;
+            background-color: #333;
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 4px;
+            transition: width 1s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Components ---
+
+        function RoadmapView() {
+            const [nodes, setNodes] = useState([
+                { id: '1', title: 'Calculus I: Limits', description: 'Introduction to limits and continuity.', status: 'completed' },
+                { id: '2', title: 'Calculus I: Derivatives', description: 'The definition of the derivative.', status: 'in-progress' },
+                { id: '3', title: 'Calculus I: Integrals', description: 'Computing areas under curves.', status: 'locked' },
+                { id: '4', title: 'Calculus II: Series', description: 'Infinite sequences and series.', status: 'locked' },
+            ]);
+
+            return (
+                <div className="roadmap-container">
+                    <h2>My Learning Path: Mathematics</h2>
+                    {nodes.map((node) => (
+                        <div key={node.id} className={`roadmap-node ${node.status}`}>
+                            <div className={`node-status status-${node.status}`}>
+                                {node.status.replace('-', ' ')}
+                            </div>
+                            <h3>{node.title}</h3>
+                            <p>{node.description}</p>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        function ParentDashboard() {
+            const childStats = {
+                name: 'Alex',
+                studyTimeHours: 4.5,
+                topicsCompleted: 12,
+                totalTopics: 50,
+                recentActivity: 'Completed Quiz: Algebra Basics (90%)'
+            };
+
+            const progressPercentage = (childStats.topicsCompleted / childStats.totalTopics) * 100;
+
+            return (
+                <div style={{ padding: '20px', backgroundColor: '#1e1e1e', borderRadius: '10px' }}>
+                    <h2 style={{ borderBottom: '1px solid #444', paddingBottom: '10px' }}>Parent Dashboard: {childStats.name}</h2>
+
+                    <div className="dashboard-grid">
+                        <div className="dashboard-card">
+                            <h4>Study Time This Week</h4>
+                            <p className="big-number">{childStats.studyTimeHours} hrs</p>
+                        </div>
+
+                        <div className="dashboard-card">
+                            <h4>Topics Completed</h4>
+                            <p className="big-number">{childStats.topicsCompleted} / {childStats.totalTopics}</p>
+                            <div className="progress-track">
+                                <div className="progress-fill" style={{ width: `${progressPercentage}%` }}></div>
+                            </div>
+                        </div>
+
+                        <div className="dashboard-card">
+                            <h4>Recent Activity</h4>
+                            <p style={{ color: '#aaa', fontSize: '14px' }}>{childStats.recentActivity}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [view, setView] = useState('student');
+
+            return (
+                <div className="app-container">
+                    <header>
+                        <div>
+                            <h1>EduPath AI</h1>
+                            <p className="subtitle">Personalized Learning Platform</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                onClick={() => setView('student')}
+                                className={view === 'student' ? 'active' : ''}>
+                                Student View
+                            </button>
+                            <button
+                                onClick={() => setView('parent')}
+                                className={view === 'parent' ? 'active' : ''}>
+                                Parent Dashboard
+                            </button>
+                        </div>
+                    </header>
+
+                    <main>
+                        {view === 'student' ? <RoadmapView /> : <ParentDashboard />}
+                    </main>
+                </div>
+            );
+        }
+
+        // --- Mounting ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

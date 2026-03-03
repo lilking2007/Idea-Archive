@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: edupath
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://admin:password@postgres:5432/edupath
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    stdin_open: true
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  postgres_data:
