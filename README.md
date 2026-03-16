@@ -16,7 +16,7 @@ I'd dive in headfirst. Code late into the night. Tinker until it worked. No matt
 ## What You'll Find
 
 **Unfiltered snapshots of curiosity:**
-- High school weekend projects
+- Weekend projects
 - 2AM "what if" prototypes  
 - Ideas that wouldn't let me sleep
 - Experiments I chased to completion
